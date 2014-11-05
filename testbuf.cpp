@@ -219,7 +219,6 @@ int main()
 
     cout << "Test passed" <<endl<<endl;
 
-    //bufMgr->BufDump();
 
 #ifdef DEBUGBUF
     bufMgr->printSelf();
@@ -227,7 +226,7 @@ int main()
 
     for (i = 0; i < num; i++)
       CALL(bufMgr->unPinPage(file4, i+2, true));
-    
+
     cout << "\nReading \"test.1\"...\n";
     cout << "Expected Result: ";
     cout << "Pages in order.  Values matching page number.\n\n";

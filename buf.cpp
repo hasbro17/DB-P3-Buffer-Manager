@@ -1,3 +1,10 @@
+/* Name: Haseeb Tariq
+*  Student ID: 9071761317
+   Net ID: htariq
+
+Summary: The buffer manager manages the state of the buffer pool frames by allocating and reading/writing pages into the frames.
+It keeps track of the frame states with the help of the BufHashTable and BufDesc classes.
+*/
 #include <memory.h>
 #include <unistd.h>
 #include <errno.h>
@@ -19,6 +26,10 @@
 // Constructor of the class BufMgr
 //----------------------------------------
 
+/*
+*This is the class constructor. Allocates an array for the buffer pool with bufs page frames and a corresponding BufDesc table. 
+*The way things are set up all frames will be in the clear state when the buffer pool is allocated. The hash table will also start out in an empty state. We have provided the constructor.
+*/
 BufMgr::BufMgr(const int bufs)
 {
     numBufs = bufs;
@@ -40,7 +51,9 @@ BufMgr::BufMgr(const int bufs)
     clockHand = bufs - 1;
 }
 
-
+/*
+*Flushes out all dirty pages and deallocates the buffer pool and the BufDesc table.
+*/
 BufMgr::~BufMgr() {
 	int pageNo;
 	Page *pagePtr;
@@ -67,7 +80,12 @@ BufMgr::~BufMgr() {
 
 }
 
-
+/*
+*Allocates a free frame using the clock algorithm; if necessary, writing a dirty page back to disk. 
+*Updates the hashtable accordingly when it kicks out a page.
+@param: frame-> used to return the address of the frame just freed.
+@return: Status -> OK or error
+*/
 const Status BufMgr::allocBuf(int & frame) {
 	int i;
 	File *file;
@@ -107,15 +125,15 @@ const Status BufMgr::allocBuf(int & frame) {
 			if(bufTable[i].pinCnt>0)
 				continue;
 
+			file=bufTable[i].file;
 			if(bufTable[i].dirty)//flush to disk if dirty
 			{
-				file=bufTable[i].file;
 				retval=file->writePage(bufTable[i].pageNo,&bufPool[i]);//flush out to disk
 				if(retval!=OK)//return UNIXERR if problem at the IO layer
 					return UNIXERR;
-				hashTable->remove(file,bufTable[i].pageNo);//remove entry from hashTable
 			}
 
+			hashTable->remove(file,bufTable[i].pageNo);//remove entry from hashTable
 			//set the frame number to the free frame
 			frame=i;
 			return OK;
@@ -124,13 +142,17 @@ const Status BufMgr::allocBuf(int & frame) {
 
 }
 
-	
+/*
+*Checks whether a page is already in the buffer pool by invoking the lookup() method on the hashtable to get a frame number.
+*@param: the file and page number to be read. And the page stores the page just read
+@return: Status OK if succeded, Error otherwise 
+*/
 const Status BufMgr::readPage(File* file, const int PageNo, Page*& page) {
 	int frameNo;
 	Status retval;
 	//Check Hashtable for the file and pageNo
 	if( (hashTable->lookup(file, PageNo, frameNo)) !=OK)//page not found in bufPool
-	{
+	{	
 		//allocate a new frame
 		if( (retval=allocBuf(frameNo)) != OK)
 			return retval;//either BUFFEREXCEEDED or UNIXERR from the allocBuff
@@ -159,7 +181,9 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page) {
 	}
 }
 
-
+/*
+*Unpins the page number specified by the fila and PageNo. Sets the dirty bit to true if page was modified
+*/
 const Status BufMgr::unPinPage(File* file, const int PageNo, 
 			       const bool dirty) {
 	int frameNo;
@@ -178,7 +202,9 @@ const Status BufMgr::unPinPage(File* file, const int PageNo,
 	return OK;
 }
 
-
+/*
+*Allocates a page in the buffer pool by first allocating a new page in the file and setting up a free frame with that page number
+*/
 const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page)  {
 	// TODO: Implement this method by looking at the description in the writeup.
 	Status retval;
@@ -204,7 +230,9 @@ const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page)  {
 	return OK;
 }
 
-
+/*
+*Removes the given pageNo from the file and if found then also from the bufferPool
+*/
 const Status BufMgr::disposePage(File* file, const int pageNo) {
 	int frameNo;
 	//See if page in buffer pool
@@ -219,7 +247,9 @@ const Status BufMgr::disposePage(File* file, const int pageNo) {
 	return file->disposePage(pageNo);
 }
 
-
+/*
+*Scan all frame for pages of the particular file and removes them from the frames. Flushes them out to disk first if dirty
+*/
 const Status BufMgr::flushFile(const File* file) {
 	//scan for all pages of the file in the bufPool
 	Status retval;
@@ -249,7 +279,9 @@ const Status BufMgr::flushFile(const File* file) {
 	return OK;
 }
 
-
+/*
+*Prints out the content of each frame in the buffer Pool along with if its pinned or not
+*/
 void BufMgr::printSelf(void) 
 {
     BufDesc* tmpbuf;
